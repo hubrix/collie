@@ -23,6 +23,10 @@ Running a crew? Update the lead first; members follow on their own. Details:
 
 ## [Unreleased]
 
+### Fixed
+
+- **A bridge that fails to start now exits, so its supervisor retries it.** Started before the network was up, or with its port taken, the bridge printed the error and stayed alive with nothing listening, so systemd saw a healthy service and never restarted it. It now exits non-zero, and `Restart=on-failure` retries until the bind succeeds.
+
 ## [1.24.1] - 2026-10-27
 
 **Urgent.** Since 1.22.0 omp panes can refuse, hold or silently lose sends, and a Claude send during a turn can be held or end "may have arrived".

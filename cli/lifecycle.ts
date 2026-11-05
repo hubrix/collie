@@ -1237,7 +1237,15 @@ export async function cmdExecBridge(deps: LifecycleDeps): Promise<number> {
   const spec = serviceSpec(deps.ctx, resolveTailscaleHosts(deps), deps.host);
   const env = { ...stringEnv(deps.ctx.env), ...bridgeEnvironment(spec) };
   for (const [k, v] of Object.entries(env)) process.env[k] = v;
-  await import("../bridge/index.ts");
+  try {
+    await import("../bridge/index.ts");
+  } catch (err) {
+    // Exit here, not through `run`'s return value: a bridge that failed partway through startup has
+    // timers and sockets holding the event loop open, so a mere exit code would leave a live process
+    // with nothing listening, and the supervisor would never retry it.
+    deps.io.err(`error: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(EXIT.FAIL);
+  }
   return EXIT.OK;
 }
 
