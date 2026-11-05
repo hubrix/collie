@@ -736,6 +736,28 @@ if port_free "$BRIDGE_PORT"; then
   fail "\`collie _exec-bridge\` never listened on ${BRIDGE_PORT}: $(cat "${TMP_ROOT}/bridge.out")"
 fi
 assert_contains "$(cat "${TMP_ROOT}/bridge.out")" "[bridge] listening on http://127.0.0.1:${BRIDGE_PORT}"
+# A bridge that cannot bind must EXIT non-zero. Staying alive with nothing listening looks healthy to
+# the supervisor, so Restart=on-failure never retries it (a boot that beat the network did this).
+LOSER_STATE="${TMP_ROOT}/bridge-loser-state"
+mkdir -p "$LOSER_STATE"
+env -i HOME="$L_HOME" HERDR_PLUGIN_CONFIG_DIR="$L_CONFIG" PATH="$L_BIN" \
+  COLLIE_PORT="$BRIDGE_PORT" COLLIE_STATE_DIR="$LOSER_STATE" \
+  HERDR_SOCKET_PATH="${TMP_ROOT}/absent.sock" \
+  "$BIN" _exec-bridge > "${TMP_ROOT}/bridge-loser.out" 2>&1 &
+LOSER_PID=$!
+for _ in $(seq 1 150); do
+  kill -0 "$LOSER_PID" 2>/dev/null || break
+  sleep 0.1
+done
+if kill -0 "$LOSER_PID" 2>/dev/null; then
+  kill "$LOSER_PID" 2>/dev/null || true
+  kill "$BRIDGE_PID" 2>/dev/null || true
+  fail "a bridge that could not bind ${BRIDGE_PORT} stayed alive: $(cat "${TMP_ROOT}/bridge-loser.out")"
+fi
+LOSER_RC=0
+wait "$LOSER_PID" || LOSER_RC=$?
+assert_eq "$LOSER_RC" "1"
+assert_contains "$(cat "${TMP_ROOT}/bridge-loser.out")" "error: "
 # It is THIS process, not a child: the pid we backgrounded is the one holding the port.
 kill "$BRIDGE_PID" 2>/dev/null || true
 wait "$BRIDGE_PID" 2>/dev/null || true
