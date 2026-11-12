@@ -31,6 +31,9 @@
       "below": {
         "maxRows": 8,
         "footerMaxRows": 8,
+        "hints": [
+          "^\\s*/rc(?: (?:active|connecting…|reconnecting|failed))?$"
+        ],
         "footerRows": [
           { "name": "agents-panel-main", "pattern": "^\\s*(?:❯\\s+)?●\\s+main(?:\\s.*)?$" },
           { "name": "agents-panel-agent", "pattern": "^\\s*(?:❯\\s+)?◯\\s+\\S.*$" },
