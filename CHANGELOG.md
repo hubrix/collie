@@ -26,6 +26,7 @@ Running a crew? Update the lead first; members follow on their own. Details:
 ### Fixed
 
 - **A bridge that fails to start now exits, so its supervisor retries it.** Started before the network was up, or with its port taken, the bridge printed the error and stayed alive with nothing listening, so systemd saw a healthy service and never restarted it. It now exits non-zero, and `Restart=on-failure` retries until the bind succeeds.
+- **Claude's Remote Control row coming or going no longer fails a send.** Claude Code draws its Remote Control status (`/rc`, `/rc active`, `/rc connecting…`, `/rc reconnecting`, `/rc failed`) as a row under the box. Had that row come or gone while Collie typed, the send's probe failed, the send was held as "Something is open at the box", and each retry could fail the same way. The Claude profile now names the row as a hint, so it no longer counts as the screen moving; its focused form, which takes Enter, still counts.
 
 ## [1.24.1] - 2026-10-27
 
